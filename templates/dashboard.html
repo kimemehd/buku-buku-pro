@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Buku Pro - Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 15px; background-color: #f4f4f9; padding-bottom: 40px; }
+        .Card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { color: #333; margin: 0; }
+        .btn-logout { background-color: #7f8c8d; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+        @media(min-width: 480px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+        .stat-box { padding: 15px; border-radius: 8px; text-align: center; color: white; font-weight: bold; }
+        .bg-salio { background: #2ecc71; font-size: 20px; }
+        .bg-weka { background: #3498db; }
+        .bg-toa { background: #e74c3c; }
+        .stat-label { font-size: 12px; opacity: 0.9; margin-bottom: 5px; text-transform: uppercase; }
+
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 15px; }
+        .btn-submit { background-color: #2c3e50; color: white; border: none; font-weight: bold; cursor: pointer; }
+        
+        .search-box { border: 2px solid #3498db; background-color: #fff; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .Weka { color: green; font-weight: bold; }
+        .Toa { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header-box">
+        <h1>📚 Buku Buku Pro</h1>
+        <a href="/logout" class="btn-logout">Ondoka (Logout)</a>
+    </div>
+
+    <div style="margin-bottom: 15px; font-weight: bold; color: #34495e;">
+        Habari, {{ user.jina }} (Cheo: {{ user.role }})
+    </div>
+    
+    <!-- Mchanganuo wa Hesabu -->
+    <div class="stats-grid">
+        <div class="stat-box bg-salio">
+            <div class="stat-label">
+                {% if user.role == 'admin' %} Salio la Kikundi (Tsh) {% else %} Salio Lako (Tsh) {% endif %}
+            </div>
+            <div>{{ "{:,.0f}".format(salio) }}</div>
+        </div>
+        <div class="stat-box bg-weka">
+            <div class="stat-label">Jumla ya Akiba (+)</div>
+            <div>{{ "{:,.0f}".format(jumla_weka) }}</div>
+        </div>
+        <div class="stat-box bg-toa">
+            <div class="stat-label">Jumla ya Mitoyo (-)</div>
+            <div>{{ "{:,.0f}".format(jumla_toa) }}</div>
+        </div>
+    </div>
+
+    <!-- FOMU YA ADMIN TU (Itafichwa kama mtumiaji sio admin) -->
+    {% if user.role == 'admin' %}
+    <div class="Card">
+        <h3>Weka Muamala Mpya (Admin Tu)</h3>
+        <form action="/weka_muamala" method="POST">
+            <input type="text" name="jina" placeholder="Jina la Mwanachama" required>
+            <input type="tel" name="simu" placeholder="Namba ya Simu (Mf: 07...)" required>
+            <input type="number" name="kiasi" placeholder="Kiasi (Tsh)" required>
+            
+            <select name="kundi">
+                <option value="Akiba">Akiba / Michango</option>
+                <option value="Mkopo">Marejesho ya Mkopo</option>
+                <option value="Faini">Faini</option>
+                <option value="Nauli">Nauli / Vikao</option>
+            </select>
+
+            <select name="aina">
+                <option value="Weka">Weka Akiba (+)</option>
+                <option value="Toa">Toa Fedha (-)</option>
+            </select>
+            
+            <button type="submit" class="btn-submit">Hifadhi Muamala</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Historia ya Miamala -->
+    <div class="Card">
+        <h3>{% if user.role == 'admin' %} Historia ya Miamala Yote {% else %} Historia ya Miamala Yako {% endif %}</h3>
+        
+        <input type="text" id="searchBar" class="search-box" placeholder="🔍 Tafuta..." onkeyup="chujaMiamala()">
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Muda</th>
+                        <th>Mwanachama</th>
+                        <th>Simu</th>
+                        <th>Mchango</th>
+                        <th>Kiasi (Tsh)</th>
+                        <th>Aina</th>
+                    </tr>
+                </thead>
+                <tbody id="miamalaKizazi">
+                    {% for m in miamala %}
+                    <tr>
+                        <td>{{ m.muda }}</td>
+                        <td><strong>{{ m.jina }}</strong></td>
+                        <td>{{ m.simu }}</td>
+                        <td><span style="background:#eee; padding:2px 6px; border-radius:4px; font-size:11px;">{{ m.kundi }}</span></td>
+                        <td>{{ "{:,.0f}".format(m.kiasi) }}</td>
+                        <td class="{{ m.aina }}">{{ m.aina }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #7f8c8d;">Hakuna miamala iliyopatikana.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function chujaMiamala() {
+            let neno = document.getElementById('searchBar').value.toLowerCase();
+            let rows = document.getElementById('miamalaKizazi').getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                let jinaCell = rows[i].getElementsByTagName('td')[1];
+                let simuCell = rows[i].getElementsByTagName('td')[2];
+                let kundiCell = rows[i].getElementsByTagName('td')[3];
+                
+                if (jinaCell || simuCell || kundiCell) {
+                    let text = (jinaCell.textContent || jinaCell.innerText) + " " + 
+                               (simuCell.textContent || simuCell.innerText) + " " + 
+                               (kundiCell.textContent || kundiCell.innerText);
+                    
+                    if (text.toLowerCase().indexOf(neno) > -1) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
